@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        html,
+        body {
+            box-sizing: border-box;
+            font-size: 10px;
+            padding: 2rem;
+            height: 90vh;
+        }
+        
+        .app {
+            width: 80%;
+            height: 85vh;
+            margin: auto;
+            background-color: #4B6587;
+        }
+        
+        .header {
+            align-items: center;
+            width: 80%;
+            padding: 2rem;
+            margin: auto;
+            border-bottom: 1px solid #C8C6C6;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #F7F6F2;
+        }
+        
+        .device h3 {
+            color: #F0E5CF;
+        }
+        
+        .content {
+            display: flex;
+            justify-content: space-around;
+            padding: 2rem;
+        }
+        
+        #lightPic>input {
+            margin-top: 1rem;
+            background-color: rgb(50, 124, 124);
+            border: none;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            color: #F7F6F2;
+            font-size: 3rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+        }
+        
+        #lightPic2>input {
+            margin-top: 1rem;
+            background-color: rgb(50, 124, 124);
+            border: none;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            color: #F7F6F2;
+            font-size: 3rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+        }
+        
+        .teminal {
+            height: 60vh;
+            width: 30rem;
+            background-color: #2D2424;
+            padding: 2rem;
+            color: #F7F6F2;
+            font-size: 1.2rem;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <div class="header">
+            <h1>IOT điều khiển thiết bị từ xa qua internet</h1>
+        </div>
+        <div class="content">
+            <div class="device">
+                <h3>LED 1</h3>
+                <div id="lightPic">
+                    <img src="https://www.w3schools.com/js/pic_bulboff.gif" alt="light-bulb" id='lightImg'>
+                    <br>
+                    <input type="button" value="on" id="switch" onclick="switchClick()"><br>
+                </div>
+                <div id="lightPic">
+                   <p>Disable senser</p>
+                    <input type="button" value="0" id="switchSenser" onclick="changeStatusSenser()"><br>
+                </div>
+            </div>
+            <div class="device">
+                <h3>LED 2</h3>
+                <div id="lightPic2">
+                    <img src="https://www.w3schools.com/js/pic_bulboff.gif" alt="light-bulb" id='lightImg2'>
+                    <br>
+                    <input type="button" value="on" id="switch2" onclick="switchClick2()"><br>
+                </div>
+            </div>
+            <div class="teminal" id="teminal">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ledOnImg ='https://www.w3schools.com/js/pic_bulbon.gif'
+        const ledOffImg ='https://www.w3schools.com/js/pic_bulboff.gif'
+        const url= window.location.host;
+        const ws =  new WebSocket('ws://' + url + '/ws');
+       
+        createMessage({status:"noti", content:"Connecting ..."})
+        ws.onopen = function(data) 
+        {
+            createMessage({status:"success", content:"Connect server successfully!"})
+            ws.send('ping')
+        };
+
+         ws.onmessage = function(evt) 
+        {
+            if(evt.data.length<30){
+                return
+            }
+           
+            const object = JSON.parse(evt.data); //vd: { status: "success", content: "LED 1 BẬT", data:"DEVICE1_ON" }
+            const control = object.data;
+            const notificant = object.content;
+            createMessage(object)
+            if (control == 'DEVICE1_ON') {
+                document.getElementById("lightImg").src = ledOnImg;
+                document.getElementById("switch").value = 'off';
+            }
+
+            if (control == 'DEVICE1_OFF') {
+                document.getElementById("lightImg").src = ledOffImg;
+                document.getElementById("switch").value = 'on';
+            }
+
+            if (control == 'DEVICE2_ON') {
+                document.getElementById("lightImg2").src = ledOnImg;
+                document.getElementById("switch2").value = 'off';
+            }
+
+            if (control == 'DEVICE2_OFF') {
+                document.getElementById("lightImg2").src = ledOffImg;
+                document.getElementById("switch2").value = 'on';
+            }
+
+            // SENSER
+            if (control == 'SENSER_DEVICE1_DISABLE') {
+                document.getElementById("switchSenser").value = "1";
+            }
+            if (control == 'SENSER_DEVICE1_ACTIVE') {
+                document.getElementById("switchSenser").value = "0";
+            }
+        };
+  
+        function switchClick() {
+            // lay du lieu tu input
+            let x = document.getElementById("switch").value;
+            if (x == 'on') {
+                ws.send("DEVICE1_ON")
+            } else {
+                ws.send("DEVICE1_OFF")
+            }
+        }
+        
+        function switchClick2() {
+
+            // lay du lieu tu input
+            let x = document.getElementById("switch2").value;
+            if (x == 'on') {
+                ws.send("DEVICE2_ON")
+            } else {
+                ws.send("DEVICE2_OFF")
+            }
+        }
+
+        // active/ disable senser
+        function changeStatusSenser() {
+            // lay du lieu tu input
+            let x = document.getElementById("switchSenser").value;
+            if (x == '0') {
+                ws.send("SENSER_DEVICE1_DISABLE")
+            } else {
+                ws.send("SENSER_DEVICE1_ACTIVE")
+            }
+        }
+        
+
+        function createMessage(data) {
+            let info;
+            if (data.status === 'success') {
+                info = `<p style="color:#66DE93">${data.content +" "+ new Date().toLocaleString()} </p>`;
+            }
+            if (data.status === 'error') {
+                info = `<p style="color:#FF4848">${data.content} </p>`
+            }
+
+            if (data.status === 'noti') {
+                info = `<p style="color:#F9F9F9">${data.content} </p>`
+            }
+
+            document.getElementById("teminal").insertAdjacentHTML('beforeend', info);
+        }
+
+
+      
+    </script>
+</body>
+</html>
